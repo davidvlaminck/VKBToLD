@@ -27,9 +27,12 @@ class Processor:
         self.write_and_create_graph(g)
 
     def write_and_create_graph(self, g) -> Graph:
+
         if g is not None:
-            print(f'wrote test_{self.graph_counter}.ttl with {len(g)} triples')
-            g.serialize(destination=f'test_{self.graph_counter}.ttl')
+            amount_triples = len(g)
+            if amount_triples > 0:
+                print(f'wrote test_{self.graph_counter}.ttl with {amount_triples} triples')
+                g.serialize(destination=f'test_{self.graph_counter}.ttl')
 
         self.graph_counter += 1
         g = Graph()
