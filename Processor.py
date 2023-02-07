@@ -18,7 +18,7 @@ class Processor:
             self.add_borden_register(bord_register)
         self.bord_register_not_found = set()
 
-    def process(self, batch_size: int = 100, write_size: int = 20000):
+    def process(self, batch_size: int = 100, write_size: int = 14000):
         g = self.write_and_create_graph(None)
 
         opstelling_ids = []
@@ -28,6 +28,7 @@ class Processor:
 
             if len(opstelling_ids) >= batch_size:
                 self.process_borden(g, opstelling_ids)
+                self.process_ophangingen(g, opstelling_ids)
                 opstelling_ids = []
 
             if write_count > 0 and write_count % write_size == 0:
@@ -38,7 +39,6 @@ class Processor:
         print(', '.join(sorted(self.bord_register_not_found)))
 
     def write_and_create_graph(self, g) -> Graph:
-
         if g is not None:
             amount_triples = len(g)
             if amount_triples > 0:
@@ -63,16 +63,19 @@ class Processor:
         g.add((self_uri, RDF.type, URIRef(
             'https://wegenenverkeer.data.vlaanderen.be/doc/implementatiemodel/signalisatie/#Verkeersbordopstelling')))
 
-        wegsegment_node = BNode()
-        g.add((self_uri,
-               URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/installatie#Verkeersbordopstelling.wegSegment'),
-               wegsegment_node))
-        g.add((wegsegment_node,
-               URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externReferentienummer'),
-               Literal(str(opstelling.wegsegment_id))))
-        g.add((wegsegment_node,
-               URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externePartij'),
-               Literal('WegenRegister')))
+        # TODO beheerder
+
+        if opstelling.wegsegment_id is not None:
+            wegsegment_node = BNode()
+            g.add((self_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/installatie#Verkeersbordopstelling.wegSegment'),
+                   wegsegment_node))
+            g.add((wegsegment_node,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externReferentienummer'),
+                   Literal(str(opstelling.wegsegment_id))))
+            g.add((wegsegment_node,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externePartij'),
+                   Literal('WegenRegister')))
 
         self.add_positie_rijweg_to_opstelling(g, self_uri, opstelling)
         asset_id_node = BNode()
@@ -108,9 +111,236 @@ class Processor:
                 raise ValueError(f"Verkeersbordopstelling.positieTovRijweg can't be mapped to it: "
                                  f"{opstelling.zijde_van_de_rijweg}")
 
+    def process_ophangingen(self, g: Graph, opstelling_ids: [int]):
+        ophanging_ids = []
+        for ophanging in self.executor.get_all_ophangingen(opstelling_ids):
+            if ophanging.id is None:
+                continue
+            ophanging_ids.append(ophanging.id)
+            self_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}')
+            opstelling_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/opstelling_{ophanging.opstelling_id}')
+            if 'steun' in ophanging.client_id:
+                g.add((self_uri, RDF.type,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun')))
+                g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.type'),
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/id/concept/KlVerkeersbordsteunType/rechte-paal')))
+            else:
+                raise ValueError(f"can't create a type for this ophanging: {ophanging}")
+
+            # hoortbij relatie naar opstelling
+            relatie_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}-opstelling_{ophanging.opstelling_id}')
+            g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#HoortBij')))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
+                   self_uri))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.doel'),
+                   opstelling_uri))
+
+            if ophanging.lengte is not None and ophanging.lengte > -1:
+                lengte_node = BNode()
+                g.add((self_uri,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.lengte'),
+                       lengte_node))
+                g.add((lengte_node,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMeter.waarde'),
+                       Literal(ophanging.lengte / 1000.0, datatype=XSD.decimal)))
+
+            if ophanging.diameter is not None and ophanging.diameter > -1:
+                diameter_node = BNode()
+                g.add((self_uri,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.diameter'),
+                       diameter_node))
+                g.add((diameter_node,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
+                       Literal(ophanging.diameter * 1.0, datatype=XSD.decimal)))
+
+            fundering_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/fundering_{ophanging.id}')
+            g.add((fundering_uri, RDF.type,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief')))
+
+            # Bevestiging relatie naar fundering
+            relatie_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}-fundering_{ophanging.id}')
+            g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Bevestiging')))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
+                   self_uri))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.doel'),
+                   fundering_uri))
+
+            self.add_afmetingen_to_fundering(g=g, self_uri=fundering_uri, sokkel_naam=ophanging.sokkel_naam)
+
+        self.process_beugels(g=g, ophanging_ids=ophanging_ids)
+
+    def process_beugels(self, g: Graph, ophanging_ids: [int]):
+        for beugel in self.executor.get_all_beugels(ophanging_ids):
+            if beugel.id is None:
+                continue
+
+            self_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/beugel_{beugel.id}')
+            ophanging_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/ophanging_{beugel.ophanging_id}')
+            bord_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/bord_{beugel.bord_id}')
+
+            g.add((self_uri, RDF.type,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Bevestigingsbeugel')))
+
+            # Bevestiging relatie naar ophanging
+            relatie_uri = URIRef(
+                f'https://data.awvvlaanderen.be/id/asset/beugel_{beugel.id}-ophanging_{beugel.ophanging_id}')
+            g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Bevestiging')))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
+                   self_uri))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.doel'),
+                   ophanging_uri))
+
+            # Bevestiging relatie naar bord
+            relatie_uri = URIRef(
+                f'https://data.awvvlaanderen.be/id/asset/beugel_{beugel.id}-bord_{beugel.bord_id}')
+            g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Bevestiging')))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
+                   self_uri))
+            g.add((relatie_uri,
+                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.doel'),
+                   bord_uri))
+
+    def add_afmetingen_to_fundering(self, g: Graph, self_uri: URIRef, sokkel_naam: str):
+        if sokkel_naam is None:
+            return
+
+        afmeting_node = BNode()
+        vorm_node = BNode()
+        kwant_wrd1_node = BNode()
+        hoogte_node = BNode()
+
+        if sokkel_naam == '300x300x600, LG-51/VG-51/VG-76':
+            g.add(
+                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                 afmeting_node))
+            g.add((afmeting_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingGrondvlak.rechthoekig'),
+                   vorm_node))
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxlInCm.breedte'),
+                   kwant_wrd1_node))
+            g.add((kwant_wrd1_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(30, datatype=XSD.decimal)))
+            kwant_wrd2_node = BNode()
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxlInCm.lengte'),
+                   kwant_wrd2_node))
+            g.add((kwant_wrd2_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(30, datatype=XSD.decimal)))
+            g.add(
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.funderingshoogte'),
+                 hoogte_node))
+            g.add((hoogte_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(60, datatype=XSD.decimal)))
+        elif sokkel_naam == '400x400x700, LG-76/VG-89':
+            g.add(
+                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                 afmeting_node))
+            g.add((afmeting_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingGrondvlak.rechthoekig'),
+                   vorm_node))
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxlInCm.breedte'),
+                   kwant_wrd1_node))
+            g.add((kwant_wrd1_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(40, datatype=XSD.decimal)))
+            kwant_wrd2_node = BNode()
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxlInCm.lengte'),
+                   kwant_wrd2_node))
+            g.add((kwant_wrd2_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(40, datatype=XSD.decimal)))
+            g.add(
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.funderingshoogte'),
+                 hoogte_node))
+            g.add((hoogte_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(70, datatype=XSD.decimal)))
+        elif sokkel_naam == '500x500x700, LG-89/VG-114':
+            g.add(
+                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                 afmeting_node))
+            g.add((afmeting_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingGrondvlak.rechthoekig'),
+                   vorm_node))
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxlInCm.breedte'),
+                   kwant_wrd1_node))
+            g.add((kwant_wrd1_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(50, datatype=XSD.decimal)))
+            kwant_wrd2_node = BNode()
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxlInCm.lengte'),
+                   kwant_wrd2_node))
+            g.add((kwant_wrd2_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(50, datatype=XSD.decimal)))
+            g.add(
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.funderingshoogte'),
+                 hoogte_node))
+            g.add((hoogte_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(70, datatype=XSD.decimal)))
+        elif sokkel_naam == 'Bodemhuls Ø76':
+            g.add(
+                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                 afmeting_node))
+            g.add((afmeting_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingGrondvlak.rond'),
+                   vorm_node))
+            g.add((vorm_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingDiameterInCm.diameter'),
+                   kwant_wrd1_node))
+            g.add((kwant_wrd1_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(11, datatype=XSD.decimal)))
+            g.add((hoogte_node,
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInCentimeter.waarde'),
+                   Literal(37, datatype=XSD.decimal)))
+
     def process_borden(self, g: Graph, opstelling_ids: [int]):
         bord_ids = []
         for bord in self.executor.get_all_borden(opstelling_ids):
+            if bord.id is None:
+                continue
             bord_ids.append(bord.id)
             self_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/bord_{bord.id}')
             opstelling_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/opstelling_{bord.opstelling_id}')
@@ -292,7 +522,6 @@ class Processor:
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/id/concept/KlFolieType/folietype-2')))
         else:
             raise ValueError(f"bord.folie_type can't be mapped to it: {bord.folie_type}")
-
 
     def process_teken(self, g: Graph, bord: WDBBord, bord_uri: URIRef):
         self_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/verkeersteken_{bord.id}')
