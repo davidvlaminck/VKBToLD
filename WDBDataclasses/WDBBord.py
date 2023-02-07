@@ -9,3 +9,7 @@ class WDBBord:
     y: int = -1
     parameters: str = ''
     code: str = ''
+    folie_type: str = ''
+    vorm: str = ''
+    breedte: int = -1
+    hoogte: int = -1
