@@ -7,3 +7,5 @@ class WDBBord:
     hoek: float = -1.0
     opstelling_id: int = -1
     y: int = -1
+    parameters: str = ''
+    code: str = ''

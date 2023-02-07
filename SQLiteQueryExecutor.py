@@ -19,7 +19,7 @@ class SQLiteQueryExecutor:
 
     def get_all_borden(self, opstelling_ids: [int]) -> Iterator[WDBBord]:
         idstring = '(' + ','.join(map(str, opstelling_ids)) + ')'
-        query = "SELECT borden.id, aanzichten.hoek, aanzichten.opstelling_fk, y " \
+        query = "SELECT borden.id, aanzichten.hoek, aanzichten.opstelling_fk, y, borden.parameters, borden.code " \
                 "FROM aanzichten " \
                 "LEFT JOIN borden on borden.aanzicht_fk = aanzichten.id " \
                 f"WHERE aanzichten.opstelling_fk in {idstring} " \
@@ -27,4 +27,4 @@ class SQLiteQueryExecutor:
         data = self.sql_db_reader.perform_read_query(query, {})
 
         for row in data:
-            yield WDBBord(id=row[0], hoek=row[1], opstelling_id=row[2], y=row[3])
+            yield WDBBord(id=row[0], hoek=row[1], opstelling_id=row[2], y=row[3], parameters=row[4], code=row[5])
