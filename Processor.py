@@ -18,7 +18,7 @@ class Processor:
             self.add_borden_register(bord_register)
         self.bord_register_not_found = set()
 
-    def process(self, batch_size: int = 100, write_size: int = 14000):
+    def process(self, batch_size: int = 100, write_size: int = 12500):
         g = self.write_and_create_graph(None)
 
         opstelling_ids = []
@@ -64,6 +64,8 @@ class Processor:
             'https://wegenenverkeer.data.vlaanderen.be/doc/implementatiemodel/signalisatie/#Verkeersbordopstelling')))
 
         # TODO beheerder
+
+        # TODO geometry
 
         if opstelling.wegsegment_id is not None:
             wegsegment_node = BNode()
