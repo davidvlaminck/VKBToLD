@@ -1,4 +1,5 @@
 import csv
+import logging
 import math
 from pathlib import Path
 
@@ -73,7 +74,8 @@ class Processor:
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/installatie#Verkeersbordopstelling.wegSegment'),
                    wegsegment_node))
             g.add((wegsegment_node,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externReferentienummer'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externReferentienummer'),
                    Literal(str(opstelling.wegsegment_id))))
             g.add((wegsegment_node,
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtcExterneReferentie.externePartij'),
@@ -124,13 +126,16 @@ class Processor:
             if 'steun' in ophanging.client_id:
                 g.add((self_uri, RDF.type,
                        URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun')))
-                g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.type'),
-                       URIRef('https://wegenenverkeer.data.vlaanderen.be/id/concept/KlVerkeersbordsteunType/rechte-paal')))
+                g.add(
+                    (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.type'),
+                     URIRef(
+                         'https://wegenenverkeer.data.vlaanderen.be/id/concept/KlVerkeersbordsteunType/rechte-paal')))
             else:
                 raise ValueError(f"can't create a type for this ophanging: {ophanging}")
 
             # hoortbij relatie naar opstelling
-            relatie_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}-opstelling_{ophanging.opstelling_id}')
+            relatie_uri = URIRef(
+                f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}-opstelling_{ophanging.opstelling_id}')
             g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#HoortBij')))
             g.add((relatie_uri,
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
@@ -145,7 +150,8 @@ class Processor:
                        URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.lengte'),
                        lengte_node))
                 g.add((lengte_node,
-                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMeter.waarde'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMeter.waarde'),
                        Literal(ophanging.lengte / 1000.0, datatype=XSD.decimal)))
 
             if ophanging.diameter is not None and ophanging.diameter > -1:
@@ -154,7 +160,8 @@ class Processor:
                        URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Verkeersbordsteun.diameter'),
                        diameter_node))
                 g.add((diameter_node,
-                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                        Literal(ophanging.diameter * 1.0, datatype=XSD.decimal)))
 
             fundering_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/fundering_{ophanging.id}')
@@ -162,7 +169,8 @@ class Processor:
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief')))
 
             # Bevestiging relatie naar fundering
-            relatie_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}-fundering_{ophanging.id}')
+            relatie_uri = URIRef(
+                f'https://data.awvvlaanderen.be/id/asset/ophanging_{ophanging.id}-fundering_{ophanging.id}')
             g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Bevestiging')))
             g.add((relatie_uri,
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
@@ -220,7 +228,8 @@ class Processor:
 
         if sokkel_naam == '300x300x600, LG-51/VG-51/VG-76':
             g.add(
-                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
                  afmeting_node))
             g.add((afmeting_node,
                    URIRef(
@@ -253,7 +262,8 @@ class Processor:
                    Literal(60, datatype=XSD.decimal)))
         elif sokkel_naam == '400x400x700, LG-76/VG-89':
             g.add(
-                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
                  afmeting_node))
             g.add((afmeting_node,
                    URIRef(
@@ -286,7 +296,8 @@ class Processor:
                    Literal(70, datatype=XSD.decimal)))
         elif sokkel_naam == '500x500x700, LG-89/VG-114':
             g.add(
-                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
                  afmeting_node))
             g.add((afmeting_node,
                    URIRef(
@@ -319,7 +330,8 @@ class Processor:
                    Literal(70, datatype=XSD.decimal)))
         elif sokkel_naam == 'Bodemhuls Ø76':
             g.add(
-                (self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
+                (self_uri,
+                 URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#Funderingsmassief.afmetingGrondvlak'),
                  afmeting_node))
             g.add((afmeting_node,
                    URIRef(
@@ -360,7 +372,8 @@ class Processor:
                        URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord')))
 
             # hoortbij relatie
-            relatie_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/bord_{bord.id}-opstelling_{bord.opstelling_id}')
+            relatie_uri = URIRef(
+                f'https://data.awvvlaanderen.be/id/asset/bord_{bord.id}-opstelling_{bord.opstelling_id}')
             g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#HoortBij')))
             g.add((relatie_uri,
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
@@ -380,8 +393,21 @@ class Processor:
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/abstracten#Verkeersbord.aanzicht'),
                    aanzicht_kwant_node))
             g.add((aanzicht_kwant_node,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInDecimaleGraden.waarde'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInDecimaleGraden.waarde'),
                    Literal(aanzicht_hoek, datatype=XSD.decimal)))
+
+            # merk
+            if bord.leverancier is not None:
+                g.add((self_uri,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.merk'),
+                       URIRef(f'https://wegenenverkeer.data.vlaanderen.be/id/conceptscheme/KlRetroreflecterendVerkeersbordMerk/{bord.leverancier.replace(" ","-")}')))
+
+            # fabricagevoorschrift
+            if bord.fabricage is not None:
+                g.add((self_uri,
+                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/abstracten#Verkeersbord.fabricagevoorschrift'),
+                       Literal(bord.fabricage)))
 
             # opstelhoogte
             if bord.y is not None and bord.y > 0:
@@ -390,7 +416,8 @@ class Processor:
                        URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/abstracten#Verkeersbord.opstelhoogte'),
                        hoogte_kwant_node))
                 g.add((hoogte_kwant_node,
-                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMeter.waarde'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMeter.waarde'),
                        Literal(bord.y / 1000.0, datatype=XSD.decimal)))
 
             self.add_afmetingen_to_bord(g=g, self_uri=self_uri, bord=bord)
@@ -405,6 +432,7 @@ class Processor:
         afmeting_node = BNode()
         vorm_node = BNode()
         kwant_wrd1_node = BNode()
+        area = -1
 
         if bord.vorm in ['rh', 'wwr', 'wwl', 'rt'] and bord.breedte is not None:
             g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingVerkeersbord'),
@@ -413,18 +441,65 @@ class Processor:
                    URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingVerkeersbord.vierhoekig'),
                    vorm_node))
             g.add((vorm_node,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxhInMm.breedte'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxhInMm.breedte'),
                    kwant_wrd1_node))
             g.add((kwant_wrd1_node,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                    Literal(bord.breedte, datatype=XSD.decimal)))
             kwant_wrd2_node = BNode()
             g.add((vorm_node,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxhInMm.hoogte'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#DtcAfmetingBxhInMm.hoogte'),
                    kwant_wrd2_node))
             g.add((kwant_wrd2_node,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                    Literal(bord.hoogte, datatype=XSD.decimal)))
+            if bord.vorm == 'rt':
+                if bord.hoogte is not None:
+                    if bord.hoogte != bord.breedte:
+                        logging.warning('Ruitvormig bord met verschillende breedte en hoogte')
+                    area = round((bord.breedte / 1000.0) ** 2 / 2, 6)
+                    opp_node = BNode()
+                    g.add((self_uri, URIRef(
+                        'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                           opp_node))
+                    g.add((opp_node, URIRef(
+                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                           Literal(area, datatype=XSD.decimal)))
+            elif bord.vorm == 'rh':
+                if bord.hoogte is not None:
+                    area = round(bord.breedte * bord.hoogte / 1000000.0, 6)
+                    opp_node = BNode()
+                    g.add((self_uri, URIRef(
+                        'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                           opp_node))
+                    g.add((opp_node, URIRef(
+                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                           Literal(area, datatype=XSD.decimal)))
+            elif bord.vorm in ['wwr', 'wwl']:
+                if bord.hoogte is not None:
+                    h = bord.hoogte / 1000.0
+                    b = bord.breedte / 1000.0
+                    if bord.hoogte == 200:
+                        pijl = 0.172
+                    elif bord.hoogte == 300:
+                        pijl = 0.25
+                    elif bord.hoogte > 400:
+                        pijl = 0.428
+                    else:
+                        raise NotImplementedError('Onbekende hoogte voor het berekenen van de oppervlakte van een pijlbord')
+                    area = round(h * (b - pijl / 2), 6)
+                    opp_node = BNode()
+                    g.add((self_uri, URIRef(
+                        'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                           opp_node))
+                    g.add((opp_node, URIRef(
+                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                           Literal(area, datatype=XSD.decimal)))
+
         elif bord.vorm in ['dh', 'odh']:
             g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingVerkeersbord'),
                    afmeting_node))
@@ -439,6 +514,17 @@ class Processor:
                    URIRef(
                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                    Literal(bord.breedte, datatype=XSD.decimal)))
+            if bord.hoogte is not None:
+                if bord.hoogte != bord.breedte:
+                    logging.warning('Driehoekig bord met verschillende breedte en hoogte')
+                area = round(math.sqrt(3) / 4 * (bord.breedte / 1000.0) ** 2, 6)
+                opp_node = BNode()
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                       opp_node))
+                g.add((opp_node, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                       Literal(area, datatype=XSD.decimal)))
         elif bord.vorm in ['zh']:
             g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingVerkeersbord'),
                    afmeting_node))
@@ -453,6 +539,17 @@ class Processor:
                    URIRef(
                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                    Literal(bord.breedte, datatype=XSD.decimal)))
+            if bord.hoogte is not None:
+                if bord.hoogte != bord.breedte:
+                    logging.warning('Zeshoekig bord met verschillende breedte en hoogte')
+                area = round(math.sqrt(3) * 3 / 2 * (bord.breedte / 1000.0) ** 2, 6)
+                opp_node = BNode()
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                       opp_node))
+                g.add((opp_node, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                       Literal(area, datatype=XSD.decimal)))
         elif bord.vorm in ['ah']:
             g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingVerkeersbord'),
                    afmeting_node))
@@ -467,6 +564,17 @@ class Processor:
                    URIRef(
                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                    Literal(bord.breedte, datatype=XSD.decimal)))
+            if bord.hoogte is not None:
+                if bord.hoogte != bord.breedte:
+                    logging.warning('Zeshoekig bord met verschillende breedte en hoogte')
+                area = round(8 * (bord.breedte / 2000.0) ** 2 * (math.sqrt(2) - 1), 6)
+                opp_node = BNode()
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                       opp_node))
+                g.add((opp_node, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                       Literal(area, datatype=XSD.decimal)))
         elif bord.vorm in ['ro']:
             g.add((self_uri, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#DtuAfmetingVerkeersbord'),
                    afmeting_node))
@@ -481,8 +589,36 @@ class Processor:
                    URIRef(
                        'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInMillimeter.waarde'),
                    Literal(bord.breedte, datatype=XSD.decimal)))
+            if bord.hoogte is not None:
+                if bord.hoogte != bord.breedte:
+                    logging.warning('Rond bord met verschillende breedte en hoogte')
+                area = round(math.pi * (bord.breedte / 2000.0) ** 2, 6)
+                opp_node = BNode()
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.oppervlakte'),
+                       opp_node))
+                g.add((opp_node, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#KwantWrdInVierkanteMeter.waarde'),
+                       Literal(area, datatype=XSD.decimal)))
         else:
             raise ValueError(f"bord.vorm can't be mapped: {bord.vorm}")
+
+        if area != -1:
+            if area <= 1:
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.grootteorde'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/id/concept/KlRetroreflecterendVerkeersbordGrootteorde/klein')))
+            elif area <= 2:
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.grootteorde'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/id/concept/KlRetroreflecterendVerkeersbordGrootteorde/middelgroot')))
+            else:
+                g.add((self_uri, URIRef(
+                    'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#RetroreflecterendVerkeersbord.grootteorde'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/id/concept/KlRetroreflecterendVerkeersbordGrootteorde/groot')))
 
     def process_folie(self, g: Graph, bord: WDBBord, bord_uri: URIRef):
         self_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/folie_{bord.id}')
@@ -556,7 +692,8 @@ class Processor:
                URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/installatie#VerkeersbordConcept')))
 
         # hoortbij relatie
-        relatie_uri = URIRef(f'https://data.awvvlaanderen.be/id/asset/verkeersteken_{bord.id}-verkeersbordconcept_{bord.id}')
+        relatie_uri = URIRef(
+            f'https://data.awvvlaanderen.be/id/asset/verkeersteken_{bord.id}-verkeersbordconcept_{bord.id}')
         g.add((relatie_uri, RDF.type, URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#HoortBij')))
         g.add((relatie_uri,
                URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/implementatieelement#RelatieObject.bron'),
@@ -568,7 +705,8 @@ class Processor:
         # code
         if bord.code != 'Unknown' and bord.code is not None:
             g.add((self_uri,
-                   URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/installatie#VerkeersbordConcept.verkeersbordCode'),
+                   URIRef(
+                       'https://wegenenverkeer.data.vlaanderen.be/ns/installatie#VerkeersbordConcept.verkeersbordCode'),
                    Literal(bord.code)))
 
             if bord.code in self.bord_register:
@@ -579,7 +717,8 @@ class Processor:
                 image_filename = self.bord_register[bord.code]['image'].split('/')[-1]
                 afbeelding_node = BNode()
                 g.add((self_uri,
-                       URIRef('https://wegenenverkeer.data.vlaanderen.be/ns/installatie#VerkeersbordConcept.afbeelding'),
+                       URIRef(
+                           'https://wegenenverkeer.data.vlaanderen.be/ns/installatie#VerkeersbordConcept.afbeelding'),
                        afbeelding_node))
                 g.add((afbeelding_node,
                        URIRef(

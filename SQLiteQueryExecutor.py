@@ -22,16 +22,19 @@ class SQLiteQueryExecutor:
     def get_all_borden(self, opstelling_ids: [int]) -> Iterator[WDBBord]:
         idstring = '(' + ','.join(map(str, opstelling_ids)) + ')'
         query = "SELECT borden.id, aanzichten.hoek, aanzichten.opstelling_fk, y, borden.parameters, borden.code, " \
-                "   borden.folieType, borden.vorm, borden.breedte, borden.hoogte " \
+                "   borden.folieType, borden.vorm, borden.breedte, borden.hoogte, leverancierItem.naam, fabricageType.naam " \
                 "FROM aanzichten " \
                 "   LEFT JOIN borden on borden.aanzicht_fk = aanzichten.id " \
+                "   LEFT JOIN leverancierItem on borden.leverancierItem_fk = leverancierItem.key " \
+                "   LEFT JOIN fabricageType on borden.fabricageType_fk = fabricageType.key " \
                 f"WHERE aanzichten.opstelling_fk in {idstring} " \
                 "ORDER BY aanzichten.opstelling_fk, aanzichten.id , borden.id"
         data = self.sql_db_reader.perform_read_query(query, {})
 
         for row in data:
             yield WDBBord(id=row[0], hoek=row[1], opstelling_id=row[2], y=row[3], parameters=row[4], code=row[5],
-                          folie_type=row[6], vorm=row[7], breedte=row[8], hoogte=row[9])
+                          folie_type=row[6], vorm=row[7], breedte=row[8], hoogte=row[9], leverancier=row[10],
+                          fabricage=row[11])
 
     def get_all_ophangingen(self, opstelling_ids: [int]) -> Iterator[WDBOphanging]:
         idstring = '(' + ','.join(map(str, opstelling_ids)) + ')'

@@ -13,3 +13,5 @@ class WDBBord:
     vorm: str = ''
     breedte: int = -1
     hoogte: int = -1
+    leverancier: str = ''
+    fabricage: str = ''

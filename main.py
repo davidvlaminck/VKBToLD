@@ -7,7 +7,7 @@ from SQLiteQueryExecutor import SQLiteQueryExecutor
 
 
 if __name__ == '__main__':
-    processor = Processor(SQLiteQueryExecutor(SQLDbReader(Path('verkeersborden20k.sqlite'))),
+    processor = Processor(SQLiteQueryExecutor(SQLDbReader(Path('verkeersborden300.sqlite'))),
                           bord_register=Path('wegcode_register.csv'))
     processor.process()
 
